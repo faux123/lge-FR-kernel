@@ -1,3 +1,13 @@
+config MACH_STAR_TMUS_E
+	bool "T-Mobile USA Rev E Board"
+	depends on MACH_STAR
+	default y
+
+config MACH_STAR_MDM_C
+	bool "Star Rev C Board"
+	depends on MACH_STAR
+	default n
+
 config STAR_PMIC
 	bool "star pmic test"
 	depends on MACH_STAR
