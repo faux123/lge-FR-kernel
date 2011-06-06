@@ -29,10 +29,14 @@
 *.lzma
 *.patch
 *.gcno
+*.cpio
+*.lds
 
 #
 # Top-level generic files
 #
+Image
+zImage
 tags
 TAGS
 vmlinux
@@ -45,6 +49,13 @@ Module.symvers
 #
 # Generated include files
 #
+drivers/char/defkeymap.c
+kernel/config_data.h
+kernel/timeconst.h
+lib/crc32table.h
+lib/gen_crc32table
+usr/gen_init_cpio
+include/asm-arm
 include/asm
 include/asm-*/asm-offsets.h
 include/config

@@ -824,10 +824,16 @@ static void DfsParametersInit(NvRmDfs* pDfs)
         pDfs->LowCornerKHz.Domains[i] = pDfs->DfsParameters[i].MinKHz;
         pDfs->HighCornerKHz.Domains[i] = pDfs->DfsParameters[i].MaxKHz;
     }
+
 #ifdef USE_FAKE_SHMOO
 	// Set maximum scaling frequency to 1100mhz at boot
+#ifndef CONFIG_STOCK_VOLTAGE
 	pDfs->HighCornerKHz.Domains[NvRmDfsClockId_Cpu] = 1100000;
-#endif
+#else
+	pDfs->HighCornerKHz.Domains[NvRmDfsClockId_Cpu] = 1015000;
+#endif // CONFIG_STOCK_VOLTAGE
+#endif // FAKE_SHMOO
+
     pDfs->CpuCornersShadow.MinKHz =
         pDfs->LowCornerKHz.Domains[NvRmDfsClockId_Cpu];
     pDfs->CpuCornersShadow.MaxKHz =
