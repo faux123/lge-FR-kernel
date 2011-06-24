@@ -8,6 +8,23 @@ config MACH_STAR_MDM_C
 	depends on MACH_STAR
 	default n
 
+config AVP_OVERCLOCK
+	bool "AVP Overclocking"
+	depends on MACH_STAR
+	default n
+
+config DDR2_SDRAM_FREQ
+	int "DDR2 SDRAM Frequency"
+	default 300000
+
+config GPU_MEM_CARVEOUT_CONST
+	int "GPU Memory Carveout Constant (must match GPU_MEM_CARVEOUT)"
+	default 128
+
+config GPU_MEM_CARVEOUT
+	hex "GPU Memory Carveout (must match GPU_MEM_CARVEOUT_CONST)"
+	default 0x08000000
+
 config STOCK_VOLTAGE
 	bool "stock voltage values"
 	depends on MACH_STAR

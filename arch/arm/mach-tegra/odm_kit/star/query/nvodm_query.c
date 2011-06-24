@@ -674,7 +674,7 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
     },
     {
                   0x20,   /* Rev 2.0 */
-                300000,   /* SDRAM frquency */
+CONFIG_DDR2_SDRAM_FREQ,   /* SDRAM frquency */
                   1200,   /* EMC core voltage */
                     46,   /* Number of EMC parameters below */
         {
@@ -1436,7 +1436,7 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
 NvU32 NvOdmQueryCarveoutSize(void)
 {
     //20100802  increase carveout memory
-    return 0x08000000; // 128 MB <- 64MB
+    return CONFIG_GPU_MEM_CARVEOUT; // 128 MB <- 64MB
 }
 
 NvU32 NvOdmQuerySecureRegionSize(void)

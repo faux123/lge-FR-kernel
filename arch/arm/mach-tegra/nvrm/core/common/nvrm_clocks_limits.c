@@ -81,7 +81,7 @@ NvU32 FakeShmooVmaxIndex = 7; // Max voltage index in the voltage tab (size-1)
 
 #ifndef CONFIG_STOCK_VOLTAGE
 
-#define MAX_OVERCLOCK (1500000)
+#define MAX_OVERCLOCK (1552000)
 
 NvU32 FakeShmooVoltages[] = {
     770,
@@ -90,8 +90,8 @@ NvU32 FakeShmooVoltages[] = {
     950,
     1050,
     1150,
-    1200,
-    1300,
+    1250,
+    1350,
 };
 
 NvRmScaledClkLimits FakepScaledCpuLimits = {
@@ -100,29 +100,29 @@ NvRmScaledClkLimits FakepScaledCpuLimits = {
     32, // FakepScaledCpuLimits.MinKHz
     // Clock table
     {
-	400000,
-    	500000,
-    	800000,
-    	1000000,
+	389000,
+    	503000,
+    	816000,
+    	1015000,
 	1100000,
-	1200000,
-	1300000,
-	1500000,
+	1216000,
+	1408000,
+	1552000,
     }
 };
 
 #else	// STOCK_VOLTAGE_VALUES
-#define MAX_OVERCLOCK (1216000)
+#define MAX_OVERCLOCK (1408000)
 
 NvU32 FakeShmooVoltages[] = {
     770,
     800,
     850,
-    875,
-    950,
+    900,
     1000,
     1100,
     1200,
+    1300,
 };
 
 NvRmScaledClkLimits FakepScaledCpuLimits = {
@@ -134,11 +134,11 @@ NvRmScaledClkLimits FakepScaledCpuLimits = {
 	389000,
     	503000,
     	655000,
-    	760000,
-    	950000,
+    	816000,
     	1015000,
 	1100000,
 	1216000,
+        1408000,
     }
 };
 
@@ -245,6 +245,9 @@ NvRmPrivClockLimitsInit(NvRmDeviceHandle hRmDevice)
     // Combine AVP/System clock absolute limit with scaling V/F ladder upper
     // boundary, and set default clock range for all present modules the same
     // as for AVP/System clock
+#ifdef CONFIG_AVP_OVERCLOCK
+    AvpMaxKHz = 266400;
+#else
     AvpMaxKHz = pSKUedLimits->AvpMaxKHz;
     for (i = 0; i < pShmoo->ScaledLimitsListSize; i++)
     {
@@ -255,6 +258,7 @@ NvRmPrivClockLimitsInit(NvRmDeviceHandle hRmDevice)
             break;
         }
     }
+#endif //CONFIG_AVP_OVERCLOCK
 
     for (i = 0; i < NvRmPrivModuleID_Num; i++)
     {
