@@ -1433,14 +1433,15 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
     }
 }
 
+#define ONE_MB	0x00100000
 NvU32 NvOdmQueryCarveoutSize(void)
 {
     //20100802  increase carveout memory
-    return CONFIG_GPU_MEM_CARVEOUT; // 128 MB <- 64MB
+    return (CONFIG_GPU_MEM_CARVEOUT_SZ*ONE_MB);
 }
 
 NvU32 NvOdmQuerySecureRegionSize(void)
 {
-    return 0x00800000;// 8 MB
+    return (8*ONE_MB);// 8 MB
 }
 

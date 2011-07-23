@@ -8,22 +8,28 @@ config MACH_STAR_MDM_C
 	depends on MACH_STAR
 	default n
 
-config AVP_OVERCLOCK
-	bool "AVP Overclocking"
+config FAKE_SHMOO
+	bool "Tegra2 Overclocking Enable"
 	depends on MACH_STAR
-	default n
+	default y
+
+config MAX_AVP_OC_FREQ
+	int "AVP Overclock Frequency"
+	default 266400
+        depends on FAKE_SHMOO
+
+config MAX_3D_OC_FREQ
+	int "3D Overclock Frequency"
+	default 350000
+        depends on FAKE_SHMOO
 
 config DDR2_SDRAM_FREQ
 	int "DDR2 SDRAM Frequency"
 	default 300000
-
-config GPU_MEM_CARVEOUT_CONST
-	int "GPU Memory Carveout Constant (must match GPU_MEM_CARVEOUT)"
+	
+config GPU_MEM_CARVEOUT_SZ
+	int "GPU Memory Carveout Size"
 	default 128
-
-config GPU_MEM_CARVEOUT
-	hex "GPU Memory Carveout (must match GPU_MEM_CARVEOUT_CONST)"
-	default 0x08000000
 
 config STOCK_VOLTAGE
 	bool "stock voltage values"

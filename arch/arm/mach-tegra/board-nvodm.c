@@ -1501,8 +1501,8 @@ static struct platform_device star_wm8994_pdevice =
 #else
 #define RAM_CONSOLE_RESERVED_SIZE 1
 #endif
-#define CARVEOUT_SIZE 128
-#define STAR_RAM_CONSOLE_BASE 	((512-CARVEOUT_SIZE-RAM_CONSOLE_RESERVED_SIZE)*SZ_1M)
+//#define STAR_RAM_CONSOLE_BASE 	((512-CARVEOUT_SIZE-RAM_CONSOLE_RESERVED_SIZE)*SZ_1M)
+#define STAR_RAM_CONSOLE_BASE 	((512-CONFIG_GPU_MEM_CARVEOUT_SZ-RAM_CONSOLE_RESERVED_SIZE)*SZ_1M)
 #define STAR_RAM_CONSOLE_SIZE	(128*SZ_1K) 	
 static struct resource ram_console_resource[] = {
         {
@@ -1638,7 +1638,7 @@ static struct spi_board_info tegra_spi_board_info[] __initdata = {
         .chip_select = 0,
         .mode = SPI_MODE_1,
         .max_speed_hz = 24000000,
-//        .platform_data = NULL,//°ËÅä 
+//        .platform_data = NULL,//ï¿½ï¿½ï¿½ï¿½ 
         .irq = 0,
     },
 };
@@ -1859,7 +1859,7 @@ static struct spi_board_info tegra_spi_board_info[] __initdata = {
         .chip_select = 0,
         .mode = SPI_MODE_1,
         .max_speed_hz = 24000000,
-//        .platform_data = NULL,//°ËÅä 
+//        .platform_data = NULL,//ï¿½ï¿½ï¿½ï¿½ 
         .irq = 0,
     },
 //20100809-1, , Add SPI2 for AP-CP IPC [START]
@@ -1870,7 +1870,7 @@ static struct spi_board_info tegra_spi_board_info[] __initdata = {
 		.chip_select = 0,
 		.mode = SPI_MODE_1,
 		.max_speed_hz = 24000000,
-//		  .platform_data = NULL,//°ËÅä 
+//		  .platform_data = NULL,//ï¿½ï¿½ï¿½ï¿½ 
 		.irq = 0,
 	},
 #endif
