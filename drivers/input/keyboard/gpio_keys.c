@@ -38,6 +38,21 @@ struct gpio_keys_drvdata {
 	struct gpio_button_data data[0];
 };
 
+// 20110602 rajat.suri/srinivas.mittapalli Safe modepatch
+// LGE_CHANGE_S [yehan.ahn@lge.com] 2011-05-24, [P999GB] for enable the saving-mode
+int saved_key = 0;
+
+ssize_t get_saved_key(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	sprintf(buf, "%d\n", saved_key);	
+    pr_info("YDK get_saved_key > saved_key =%s\n", buf);
+	return (ssize_t)(strlen(buf)+1);
+}
+
+DEVICE_ATTR(key_saving, 0664, get_saved_key, NULL);
+//permission for user is changed only to read from 0666 to 0664 as CTS was failing
+// LGE_CHANGE_E [yehan.ahn@lge.com] 2011-05-24
+
 static void gpio_keys_report_event(struct work_struct *work)
 {
 	struct gpio_button_data *bdata =
@@ -46,6 +61,13 @@ static void gpio_keys_report_event(struct work_struct *work)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value(button->gpio) ? 1 : 0) ^ button->active_low;
+// 20110602 rajat.suri/srinivas.mittapalli Safe modepatch
+// LGE_CHANGE_S [yehan.ahn@lge.com] 2011-05-24, [P999GB] for enable the saving-mode
+	if(button->code == KEY_VOLUMEUP) {
+        pr_info("YDK gpio_keys_report_event > key_volumeup\n");
+		saved_key = !!state;
+    }
+// LGE_CHANGE_E [yehan.ahn@lge.com] 2011-05-24
 
 	input_event(input, type, button->code, !!state);
 	input_sync(input);
@@ -172,7 +194,14 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	}
 
 	device_init_wakeup(&pdev->dev, wakeup);
-
+// 20110602 rajat.suri/srinivas.mittapalli Safe modepatch
+// LGE_CHANGE_S [yehan.ahn@lge.com] 2011-05-24, [P999GB] for enable the saving-mode
+	if(device_create_file(&pdev->dev, &dev_attr_key_saving)){
+        pr_info("YDK __devinit gpio_keys_probe > Unable to make sys_file for key_volumeup\n");
+		pr_err("tegra-kbc: Unable to make sys_file\n");
+		goto fail2;
+	}
+// LGE_CHANGE_E [yehan.ahn@lge.com] 2011-05-24	
 	return 0;
 
  fail2:
@@ -211,6 +240,11 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
 	}
 
 	input_unregister_device(input);
+	// 20110602 rajat.suri/srinivas.mittapalli Safe modepatch
+// LGE_CHANGE_S [yehan.ahn@lge.com] 2011-05-24, [P999GB] for enable the saving-mode
+	device_remove_file(&pdev->dev,  &dev_attr_key_saving);
+    pr_info("YDK __devexit gpio_keys_remove > remove sys_file for key_volumeup\n");
+// LGE_CHANGE_E [yehan.ahn@lge.com] 2011-05-24
 
 	return 0;
 }

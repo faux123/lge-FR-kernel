@@ -112,11 +112,11 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
             0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x0000004b,   /* TREFBW */
-            0x00000004,   /* QUSE_EXTRA */
+            0x00000000,   /* QUSE_EXTRA */
             0x00000003,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
-            0x00000082,   /* FBIO_CFG5 */
+            0x00000282,   /* FBIO_CFG5 */
             0xa06804ae,   /* CFG_DIG_DLL */
             0x0001f000,   /* DLL_XFORM_DQS */
             0x00000000,   /* DLL_XFORM_QUSE */
@@ -166,11 +166,11 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
             0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x00000071,   /* TREFBW */
-            0x00000004,   /* QUSE_EXTRA */
+            0x00000000,   /* QUSE_EXTRA */
             0x00000003,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
-            0x00000082,   /* FBIO_CFG5 */
+            0x00000282,   /* FBIO_CFG5 */
             0xa06804ae,   /* CFG_DIG_DLL */
             0x0001f000,   /* DLL_XFORM_DQS */
             0x00000000,   /* DLL_XFORM_QUSE */
@@ -220,11 +220,11 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
             0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x000000e1,   /* TREFBW */
-            0x00000005,   /* QUSE_EXTRA */
+            0x00000000,   /* QUSE_EXTRA */
             0x00000000,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
-            0x00000082,   /* FBIO_CFG5 */
+            0x00000282,   /* FBIO_CFG5 */
             0xa06804ae,   /* CFG_DIG_DLL */
             0x0001f000,   /* DLL_XFORM_DQS */
             0x00000000,   /* DLL_XFORM_QUSE */
@@ -274,11 +274,11 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
             0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x000001c2,   /* TREFBW */
-            0x00000005,   /* QUSE_EXTRA */
+            0x00000000,   /* QUSE_EXTRA */
             0x00000001,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
-            0x00000082,   /* FBIO_CFG5 */
+            0x00000282,   /* FBIO_CFG5 */
             0xa06804ae,   /* CFG_DIG_DLL */
             0x007f9010,   /* DLL_XFORM_DQS */
             0x00000000,   /* DLL_XFORM_QUSE */
@@ -328,11 +328,11 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
             0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x00000270,   /* TREFBW */
-            0x00000005,   /* QUSE_EXTRA */
+            0x00000000,   /* QUSE_EXTRA */
             0x00000001,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
-            0x00000082,   /* FBIO_CFG5 */
+            0x00000282,   /* FBIO_CFG5 */
             0xa04c04ae,   /* CFG_DIG_DLL */
             0x007fb010,   /* DLL_XFORM_DQS */
             0x00000000,   /* DLL_XFORM_QUSE */

@@ -125,10 +125,11 @@ bool            ap_fw_loaded = FALSE;
 #else
 static bool 	ap_fw_loaded = FALSE;
 #endif
-static long ap_cfg_pid = -1;
+//static long ap_cfg_pid = -1;
 struct net_device *ap_net_dev = NULL;
-struct semaphore  ap_eth_sema;
-static struct completion ap_cfg_exited;
+//struct semaphore  ap_eth_sema;
+//static struct completion ap_cfg_exited;
+tsk_ctl_t       ap_eth_ctl;
 static int wl_iw_set_ap_security(struct net_device *dev, struct ap_profile *ap);
 static int wl_iw_softap_deassoc_stations(struct net_device *dev, u8 *mac);
 #if defined(CONFIG_LGE_BCM432X_PATCH)	//20110121
@@ -240,11 +241,13 @@ typedef struct iscan_info {
 	iscan_buf_t * list_hdr;
 	iscan_buf_t * list_cur;
 
-	
+#if 0	
 	long sysioc_pid;
 	struct semaphore sysioc_sem;
 	struct completion sysioc_exited;
-
+#else
+	tsk_ctl_t tsk_ctl;
+#endif
 	uint32 scan_flag;	
 #if defined CSCAN
 	char ioctlbuf[WLC_IOCTL_MEDLEN];
@@ -297,10 +300,13 @@ typedef struct bt_info {
 	bool	dhcp_done; 
 	int	bt_state;
 
-	
+#if 0	
 	long bt_pid;
 	struct semaphore bt_sem;
 	struct completion bt_exited;
+#else
+	tsk_ctl_t tsk_ctl;	
+#endif
 } bt_info_t;
 
 bt_info_t *g_bt = NULL;
@@ -605,11 +611,11 @@ wl_iw_set_active_scan(
 #endif 
 		error = dev_wlc_ioctl(dev, WLC_SET_PASSIVE_SCAN, &as, sizeof(as));
 #if defined(WL_IW_USE_ISCAN)
-/* LGE_CHANGE_S [] 2009-04-15, fixed passive/active scan */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-04-15, fixed passive/active scan */
 #if !defined(CONFIG_LGE_BCM432X_PATCH)
 	else
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-04-15, fixed passive/active scan */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-04-15, fixed passive/active scan */
 		g_iscan->scan_flag = as;
 #endif 
 	p += snprintf(p, MAX_WX_STRING, "OK");
@@ -640,11 +646,11 @@ wl_iw_set_passive_scan(
 		}
 #if defined(WL_IW_USE_ISCAN)
 	}
-/* LGE_CHANGE_S [] 2009-04-15, fixed passive/active scan */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-04-15, fixed passive/active scan */
 #if !defined(CONFIG_LGE_BCM432X_PATCH)
 	else
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-04-15, fixed passive/active scan */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-04-15, fixed passive/active scan */
 		g_iscan->scan_flag = ps;
 #endif 
 
@@ -683,9 +689,9 @@ wl_iw_get_macaddr(
 
 //by sjpark 10-12-15	[
 uint wl_dtim_val = 0;		//by sjpark 100824
-// 20110210  DLNA settings [START]
+// 20110210 mingi.sung@lge.com DLNA settings [START]
 uint dnla_dtim_val = 0;
-// 20110210  DLNA settings [END]
+// 20110210 mingi.sung@lge.com DLNA settings [END]
 int wl_iw_set_dtim_val(struct net_device *dev)	//hyeok	: 100824
 {
 	int ret, cal_dtim;
@@ -700,10 +706,10 @@ int wl_iw_set_dtim_val(struct net_device *dev)	//hyeok	: 100824
 			return ret;
 
 		bi = (wl_bss_info_t*)(buf + 4);
-// 20110210  DLNA settings [START]
+// 20110210 mingi.sung@lge.com DLNA settings [START]
 //		if (dtoh32(bi->version) == WL_BSS_INFO_VERSION )
 		if (dtoh32(bi->version) == WL_BSS_INFO_VERSION && (!dnla_dtim_val) )
-// 20110210  DLNA settings [END]
+// 20110210 mingi.sung@lge.com DLNA settings [END]
 		{
 			printk("[%s] beacon_period[%d], dtim_period[%d]\n",__FUNCTION__,bi->beacon_period,bi->dtim_period);
 			cal_dtim = (bi->beacon_period) * (bi->dtim_period);
@@ -1137,8 +1143,8 @@ wl_iw_set_btcoex_dhcp(
 			
 				WL_TRACE_COEX(("%s bt->bt_state:%d\n",
 					__FUNCTION__, g_bt->bt_state));
-				
-				up(&g_bt->bt_sem);
+					up(&g_bt->tsk_ctl.sema);			
+//				up(&g_bt->bt_sem);
 			}
 		}
 
@@ -1253,13 +1259,13 @@ wl_iw_get_link_speed(
 		link_speed *= 500000;
 	}
 
-/* LGE_CHANGE_S [] 2009-04-07, showing the 5.5 Mbps */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-04-07, showing the 5.5 Mbps */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 	if (link_speed == 5500000)
 		p += snprintf(p, MAX_WX_STRING, "LinkSpeed 5.5");
 	else
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-04-07, showing the 5.5 Mbps */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-04-07, showing the 5.5 Mbps */
 	p += snprintf(p, MAX_WX_STRING, "LinkSpeed %d", link_speed/1000000);
 
 	wrqu->data.length = p - extra + 1;
@@ -1583,6 +1589,10 @@ exit_proc:
 	return res;
 }
 #endif 
+/* BEGIN: 0005568 mingi.sung@lge.com 2010-03-27 */
+/* MOD 0005568: [WLAN] Wi-Fi will be disconnected if the RSSI value is lower than -92 */
+int less_than_rssi = 0;
+/* END: 0005568 mingi.sung@lge.com 2010-03-27 */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 int wl_dtim_set = 0;
 #endif
@@ -1600,13 +1610,13 @@ wl_iw_get_rssi(
 #endif
 	int error = 0;
 	char *p = extra;
-/* LGE_CHANGE_S, [], 2009-05-13,
+/* LGE_CHANGE_S, [yoohoo@lge.com], 2009-05-13,
  * <some ssid use '<' character sometimes and it cause response discard
  * in wpa_supplicant (wpa_ctrl_request())> */
 #if !defined(CONFIG_LGE_BCM432X_PATCH)
 	static char ssidbuf[SSID_FMT_BUF_LEN];
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E, [], 2009-05-13,
+/* LGE_CHANGE_E, [yoohoo@lge.com], 2009-05-13,
  * <some ssid use '<' character sometimes and it cause response discard
  * in wpa_supplicant (wpa_ctrl_request())> */
 	scb_val_t scb_val;
@@ -1624,7 +1634,7 @@ wl_iw_get_rssi(
 #endif
 	}
 
-/* LGE_CHANGE_S, [], 2009-05-13,
+/* LGE_CHANGE_S, [yoohoo@lge.com], 2009-05-13,
  * <some ssid use '<' character sometimes and it cause response discard
  * in wpa_supplicant (wpa_ctrl_request())> */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
@@ -1638,7 +1648,7 @@ wl_iw_get_rssi(
 	wl_format_ssid(ssidbuf, ssid.SSID, dtoh32(ssid.SSID_len));
 	p += snprintf(p, MAX_WX_STRING, "%s rssi %d ", ssidbuf, rssi);
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E, [], 2009-05-13,
+/* LGE_CHANGE_E, [yoohoo@lge.com], 2009-05-13,
  * <some ssid use '<' character sometimes and it cause response discard
  * in wpa_supplicant (wpa_ctrl_request())> */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
@@ -1647,6 +1657,25 @@ wl_iw_get_rssi(
 		wl_dtim_set = 0 ;
 	}
 #endif
+/* BEGIN: 0005568 mingi.sung@lge.com 2010-03-27 */
+/* MOD 0005568: [WLAN] Wi-Fi will be disconnected if the RSSI value is lower than -92 */
+#if defined(CONFIG_LGE_BCM432X_PATCH)
+	if( rssi < -92 ){
+		less_than_rssi ++;
+	}else{
+		if( less_than_rssi != 0)
+			less_than_rssi --;
+	}
+
+	if( less_than_rssi > 2){
+		scb_val_t scbval;
+		bzero(&scbval, sizeof(scb_val_t));
+		(void) dev_wlc_ioctl(dev, WLC_DISASSOC, &scbval, sizeof(scb_val_t));
+		less_than_rssi =0 ;
+	}
+#endif	/* defined(CONFIG_LGE_BCM432X_PATCH) */
+/* END: 0005568 mingi.sung@lge.com 2010-03-27 */
+
 	wrqu->data.length = p - extra + 1;
 
 	return error;
@@ -1675,11 +1704,11 @@ wl_iw_send_priv_event(
 	return 0;
 }
 
-/* LGE_CHANGE_S, [], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
+/* LGE_CHANGE_S, [yoohoo@lge.com], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
 #if defined(CONFIG_LGE_BCM432X_PATCH) && defined(CONFIG_BRCM_USE_DEEPSLEEP)
 extern int dhd_deep_sleep(struct net_device *dev, int flag);
 #endif /* CONFIG_LGE_BCM432X_PATCH && CONFIG_BRCM_USE_DEEPSLEEP */
-/* LGE_CHANGE_E, [], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
+/* LGE_CHANGE_E, [yoohoo@lge.com], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
 
 int
 wl_control_wl_start(struct net_device *dev)
@@ -1703,7 +1732,7 @@ wl_control_wl_start(struct net_device *dev)
 	dhd_os_start_lock(iw->pub);
 
 	if (g_onoff == G_WLAN_SET_OFF) {
-/* LGE_CHANGE_S, [], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
+/* LGE_CHANGE_S, [yoohoo@lge.com], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
 #if defined(CONFIG_LGE_BCM432X_PATCH) && defined(CONFIG_BRCM_USE_DEEPSLEEP)
 		/* Use Deep Sleep instead of WL RESET */
 		dhd_deep_sleep(dev, FALSE);
@@ -1728,7 +1757,7 @@ wl_control_wl_start(struct net_device *dev)
 		 printk("Exited %s \n", __FUNCTION__);
 #endif	/* defined(CONFIG_BRCM_USE_GPIO_RESET) */ /* Do not use GPIO Reset at On/Off. Use mpc. */
 #endif /* CONFIG_LGE_BCM432X_PATCH && CONFIG_BRCM_USE_DEEPSLEEP */
-/* LGE_CHANGE_E, [], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
+/* LGE_CHANGE_E, [yoohoo@lge.com], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
 		g_onoff = G_WLAN_SET_ON;
 	}
 	WL_ERROR(("Exited %s \n", __FUNCTION__));
@@ -1779,7 +1808,7 @@ wl_iw_control_wl_off(
 		g_iscan->iscan_state = ISCAN_STATE_IDLE;
 #endif 
 
-/* LGE_CHANGE_S, [], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
+/* LGE_CHANGE_S, [yoohoo@lge.com], 2009-11-19, Use deepsleep instead of dhd_dev_reset when driver start or stop */
 #if defined(CONFIG_BRCM_USE_DEEPSLEEP)
 		/* Use Deep Sleep instead of WL Reset*/
 		dhd_deep_sleep(wl_ctl->dev, TRUE);
@@ -1815,6 +1844,27 @@ wl_iw_control_wl_off(
 		dhd_customer_gpio_wlan_ctrl(WLAN_RESET_OFF);
 #endif /* CONFIG_BRCM_USE_GPIO_RESET */
 
+// 20110413 mingi.sung@lge.com [Wi-Fi] Patch for BELKIN AP - to succeed DHCP procedure after wakeup [START]
+#if defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)
+		do
+		{
+			char buf[32] = {0,};
+			int len = 0;
+			/*Clear the present Hostip [if any]*/
+			len = bcm_mkiovar("arp_hostip_clear", NULL, 0, buf, sizeof(buf));
+			ASSERT(len);
+
+/*			if( (ret= dev_wlc_ioctl(dev, WLC_SET_VAR, buf, len)) < 0)
+				printk(KERN_ERR "%s:arp_hostip_clear failed.ret[%d]\n",\
+						__FUNCTION__, ret);
+*/
+
+			dev_wlc_ioctl(dev, WLC_SET_VAR, buf, len);
+
+		} while(0);
+#endif //CONFIG_BRCM_LGE_WL_ARPOFFLOAD
+// 20110413 mingi.sung@lge.com [Wi-Fi] Patch for BELKIN AP - to succeed DHCP procedure after wakeup [END]
+
 		wl_iw_send_priv_event(dev, "STOP");
 
 	}
@@ -1846,12 +1896,12 @@ wl_iw_control_wl_on(
 		}
 	}
 
-/* LGE_CHANGE_S [] 2009-07-09, send wl_iw_send_priv_event only if receiving regular START command */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-07-09, send wl_iw_send_priv_event only if receiving regular START command */
 #if !defined(CONFIG_LGE_BCM432X_PATCH)
 	/* Modify not sending wl_iw_send_priv_event in wl_iw_control_wl_on() */
 	wl_iw_send_priv_event(dev, "START");
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-07-09, send wl_iw_send_priv_event only if receiving regular START command */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-07-09, send wl_iw_send_priv_event only if receiving regular START command */
 
 #ifdef SOFTAP
 	if (!ap_fw_loaded) {
@@ -3228,7 +3278,8 @@ wl_iw_iscan_get_aplist(
 	if (!extra)
 		return -EINVAL;
 
-	if ((!iscan) || (iscan->sysioc_pid < 0)) {
+//	if ((!iscan) || (iscan->sysioc_pid < 0)) {
+	if ((!iscan) || (iscan->tsk_ctl.thr_pid < 0)) {
 		WL_ERROR(("%s error\n", __FUNCTION__));
 		return 0;
 	}
@@ -3349,7 +3400,8 @@ wl_iw_timerfunc(ulong data)
 		iscan->timer_on = 0;
 		if (iscan->iscan_state != ISCAN_STATE_IDLE) {
 			WL_TRACE(("timer trigger\n"));
-			up(&iscan->sysioc_sem);
+//			up(&iscan->sysioc_sem);
+			up(&iscan->tsk_ctl.sema);
 		}
 	}
 }
@@ -3470,12 +3522,27 @@ static int
 _iscan_sysioc_thread(void *data)
 {
 	uint32 status;
-	iscan_info_t *iscan = (iscan_info_t *)data;
+
+	tsk_ctl_t *tsk_ctl = (tsk_ctl_t *)data;
+	iscan_info_t *iscan = (iscan_info_t *) tsk_ctl->parent;
+//	iscan_info_t *iscan = (iscan_info_t *)data;
 	static bool iscan_pass_abort = FALSE;
 	DAEMONIZE("iscan_sysioc");
 
 	status = WL_SCAN_RESULTS_PARTIAL;
+#if 0
 	while (down_interruptible(&iscan->sysioc_sem) == 0) {
+#else
+
+	complete(&tsk_ctl->completed);
+
+	while (down_interruptible(&tsk_ctl->sema) == 0) {
+
+		SMP_RD_BARRIER_DEPENDS();
+		if (tsk_ctl->terminated) {
+			break;
+		}
+#endif
 
 #if defined(SOFTAP)
 		
@@ -3555,7 +3622,8 @@ _iscan_sysioc_thread(void *data)
 		del_timer_sync(&iscan->timer);
 		iscan->timer_on = 0;
 	}
-	complete_and_exit(&iscan->sysioc_exited, 0);
+//	complete_and_exit(&iscan->sysioc_exited, 0);
+	complete_and_exit(&tsk_ctl->completed, 0);
 }
 #endif 
 
@@ -3726,10 +3794,10 @@ wl_iw_add_bss_to_ss_cache(wl_scan_results_t *ss_list)
 			continue;
 		}
 
-		// 20101006	, bug-fix: vmalloc [START]
+		// 20101006	byoungwook.baek@lge.com, bug-fix: vmalloc [START]
 		leaf = kmalloc(bi->length + WLC_IW_SS_CACHE_CTRL_FIELD_MAXLEN, GFP_KERNEL);
 		//leaf =(wl_iw_ss_cache_t *) kmalloc(sizeof(wl_iw_ss_cache_t), GFP_KERNEL);
-		// 20101006	, bug-fix: vmalloc [END]
+		// 20101006	byoungwook.baek@lge.com, bug-fix: vmalloc [END]
 		if (!leaf) {
 			MUTEX_UNLOCK_WL_SCAN_SET();
 			WL_ERROR(("Memory alloc failure %d\n", \
@@ -3993,7 +4061,8 @@ wl_iw_iscan_set_scan(
 #endif 
 
 	
-	if ((!iscan) || (iscan->sysioc_pid < 0)) {
+//	if ((!iscan) || (iscan->sysioc_pid < 0)) {
+	if ((!iscan) || (iscan->tsk_ctl.thr_pid < 0)) {
 		WL_ERROR(("%s error \n",  __FUNCTION__));
 		return 0;
 	}
@@ -4395,7 +4464,7 @@ wl_iw_get_scan(
 	if ((error = dev_wlc_ioctl(dev, WLC_SCAN_RESULTS, list, len))) {
 		WL_ERROR(("%s: %s : Scan_results ERROR %d\n", dev->name, __FUNCTION__, error));
 		dwrq->length = len;
-/* LGE_CHANGE_S [] 2009-08-16, fix the getting ISCAN/SCAN results */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-08-16, fix the getting ISCAN/SCAN results */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 		if (g_scan_specified_ssid) {
 			list->count = 0;
@@ -4409,9 +4478,9 @@ wl_iw_get_scan(
 		}
 		return 0;
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-08-16, fix the getting ISCAN/SCAN results */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-08-16, fix the getting ISCAN/SCAN results */
 	}
-/* LGE_CHANGE_S [] 2009-08-16, fix the getting ISCAN/SCAN results */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-08-16, fix the getting ISCAN/SCAN results */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 	else {
 #endif /* CONFIG_LGE_BCM432X_PATCH */		
@@ -4567,7 +4636,8 @@ wl_iw_iscan_get_scan(
 	}
 #endif	
 	
-	if ((!iscan) || (iscan->sysioc_pid < 0)) {
+//	if ((!iscan) || (iscan->sysioc_pid < 0)) {
+	if ((!iscan) || (iscan->tsk_ctl.thr_pid < 0)) {
 		WL_ERROR(("%ssysioc_pid\n", __FUNCTION__));
 		return EAGAIN;
 	}
@@ -6653,26 +6723,35 @@ exit_proc:
 
 static int thr_wait_for_2nd_eth_dev(void *data)
 {
-	struct net_device *dev = (struct net_device *)data;
+//	struct net_device *dev = (struct net_device *)data;
 	wl_iw_t *iw;
 	int ret = 0;
 	unsigned long flags;
+
+	tsk_ctl_t *tsk_ctl = (tsk_ctl_t *)data;
+	struct net_device *dev = (struct net_device *)tsk_ctl->parent;
+	iw = *(wl_iw_t **)netdev_priv(dev);
 
 	DAEMONIZE("wl0_eth_wthread");
 
 	WL_SOFTAP(("\n>%s threda started:, PID:%x\n", __FUNCTION__, current->pid));
 
-	iw = *(wl_iw_t **)netdev_priv(dev);
+//	iw = *(wl_iw_t **)netdev_priv(dev);
 	if (!iw) {
 		WL_ERROR(("%s: dev is null\n", __FUNCTION__));
+		tsk_ctl->thr_pid = -1;
+		complete(&tsk_ctl->completed);
 		return -1;
 	}
 
 	WAKE_LOCK_INIT(iw->pub, WAKE_LOCK_SOFTAP_THREAD, "SoftAP_WT_THREAD");
 	WAKE_LOCK(iw->pub, WAKE_LOCK_SOFTAP_THREAD);
 
+	complete(&tsk_ctl->completed);
+
 #ifndef BCMSDIOH_STD
-	if (down_timeout(&ap_eth_sema,  msecs_to_jiffies(5000)) != 0) {
+//	if (down_timeout(&ap_eth_sema,  msecs_to_jiffies(5000)) != 0) {
+	if (down_timeout(&tsk_ctl->sema,  msecs_to_jiffies(5000)) != 0) {
 		WL_ERROR(("\n%s: sap_eth_sema timeout \n", __FUNCTION__));
 		ret = -1;
 		goto fail;
@@ -6703,7 +6782,8 @@ fail:
 	WAKE_LOCK_DESTROY(iw->pub, WAKE_LOCK_SOFTAP_THREAD);
 	WL_SOFTAP(("\n>%s, thread completed\n", __FUNCTION__));
 
-	complete_and_exit(&ap_cfg_exited, 0);
+//	complete_and_exit(&ap_cfg_exited, 0);
+	complete_and_exit(&tsk_ctl->completed, 0);
 	return ret;
 }
 #endif 
@@ -6839,7 +6919,9 @@ static int set_ap_cfg(struct net_device *dev, struct ap_profile *ap)
 #ifndef AP_ONLY
 
 		
-		sema_init(&ap_eth_sema, 0);
+	//	sema_init(&ap_eth_sema, 0);
+                sema_init(&ap_eth_ctl.sema, 0);
+
 #if defined(CONFIG_LGE_BCM432X_PATCH)	//20110121
                 ap_priv_running = TRUE;
 #endif
@@ -6978,14 +7060,22 @@ static int set_ap_cfg(struct net_device *dev, struct ap_profile *ap)
 		res, __FUNCTION__));
 		goto fail;
 	}
-
+#if 0
 	if (ap_cfg_running == FALSE) {
 		 init_completion(&ap_cfg_exited);
 		 
 		ap_cfg_pid = kernel_thread(thr_wait_for_2nd_eth_dev, dev, 0);
 	} else {
 		ap_cfg_pid = -1;
-		
+#else
+
+	if (ap_cfg_running == FALSE) {
+
+		PROC_START(thr_wait_for_2nd_eth_dev, dev, &ap_eth_ctl, 0);
+	} else {
+		ap_eth_ctl.thr_pid = -1;
+
+#endif	
 		if (ap_net_dev == NULL) {
 			WL_ERROR(("%s ERROR: ap_net_dev is NULL !!!\n", __FUNCTION__));
 			goto fail;
@@ -7497,10 +7587,16 @@ static int
 
 	
 #ifndef AP_ONLY
+#if 0
 	if (ap_cfg_pid >= 0) {
 		wait_for_completion(&ap_cfg_exited);
 		ap_cfg_pid = -1;
 	}
+#else
+	if (ap_eth_ctl.thr_pid >= 0) {
+		wait_for_completion(&ap_eth_ctl.completed);
+	}
+#endif
 	if ((res = wl_iw_set_ap_security(dev, &my_ap)) != 0) {
 		WL_ERROR((" %s ERROR setting SOFTAP security in :%d\n", __FUNCTION__, res));
 	}
@@ -7717,7 +7813,7 @@ int wl_iw_process_private_ascii_cmd(
 }
 #endif 
 
-/* LGE_CHANGE_S [] 2009-05-14, support private command */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-05-14, support private command */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 static int
 wl_iw_set_powermode(
@@ -7889,7 +7985,7 @@ static int wl_iw_voip_stop(struct net_device *dev)
 }
 #endif	/* Set VOIP */
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-05-14, support private command */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-05-14, support private command */
 
 static int wl_iw_set_priv(
 	struct net_device *dev,
@@ -7901,7 +7997,7 @@ static int wl_iw_set_priv(
 	int ret = 0;
 	char * extra;
 #if defined(CONFIG_LGE_BCM432X_PATCH)
-/* LGE_CHANGE_S, [] 2010-04-02 */
+/* LGE_CHANGE_S, [dongp.kim@lge.com] 2010-04-02 */
 /* [WLAN] Fixing wl_iw_set_priv function */
 	wl_iw_t *iw;
 
@@ -7910,7 +8006,7 @@ static int wl_iw_set_priv(
 		return -EFAULT;
 	}
 	iw = *(wl_iw_t **)netdev_priv(dev);
-/* LGE_CHANGE_E, [] 2010-04-02 */
+/* LGE_CHANGE_E, [dongp.kim@lge.com] 2010-04-02 */
 #else
 	wl_iw_t *iw = *(wl_iw_t **)netdev_priv(dev);
 #endif	/* defined(CONFIG_LGE_BCM432X_PATCH) */
@@ -7931,7 +8027,7 @@ static int wl_iw_set_priv(
 		WAKE_LOCK_INIT(iw->pub, WAKE_LOCK_PRIV, "wl_iw_set_priv");
 		WAKE_LOCK(iw->pub, WAKE_LOCK_PRIV);
 
-/* LGE_CHANGE_S [] 2009-07-09, send wl_iw_send_priv_event  */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-07-09, send wl_iw_send_priv_event  */
 /* only if receiving regular START command */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 	if (g_onoff == G_WLAN_SET_OFF) {
@@ -7973,7 +8069,7 @@ static int wl_iw_set_priv(
 			}
 		}
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-07-09, send wl_iw_send_priv_event only if receiving regular START command */		
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-07-09, send wl_iw_send_priv_event only if receiving regular START command */		
 
 	    if (strnicmp(extra, "SCAN-ACTIVE", strlen("SCAN-ACTIVE")) == 0) {
 #ifdef ENABLE_ACTIVE_PASSIVE_SCAN_SUPPRESS
@@ -8033,7 +8129,7 @@ static int wl_iw_set_priv(
 			ret = wl_iw_set_btcoex_dhcp(dev, info, (union iwreq_data *)dwrq, extra);
 	    }
 #else
-/* LGE_CHANGE_S [] 2009-05-14, support private command */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-05-14, support private command */
 #if !defined(CONFIG_LGE_BCM432X_PATCH)
 	    else if (strnicmp(extra, "POWERMODE", strlen("POWERMODE")) == 0)
 			ret = wl_iw_set_btcoex_dhcp(dev, info, (union iwreq_data *)dwrq, extra);
@@ -8086,7 +8182,7 @@ static int wl_iw_set_priv(
 		    wl_iw_voip_start(dev);
 	    }else if (strnicmp(extra, "VOIP-STOP", 9) == 0) {
 		    wl_iw_voip_stop(dev);
-// 20110210  DLNA settings [START]
+// 20110210 mingi.sung@lge.com DLNA settings [START]
 	    } else if (strnicmp(extra, "DLNA-START", 10) == 0) {
 		    dnla_dtim_val = wl_dtim_val;
     		/* Not connected BSS. */	
@@ -8097,10 +8193,10 @@ static int wl_iw_set_priv(
     		wl_dtim_val = dnla_dtim_val;
     		dnla_dtim_val = 0;
 	    }
-// 20110210  DLNA settings [END]
+// 20110210 mingi.sung@lge.com DLNA settings [END]
 #endif	/* Set VOIP */
 #endif /* CONFIG_LGE_BCM432X_PATCH */
-/* LGE_CHANGE_E [] 2009-05-14, support private command */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-05-14, support private command */
 #endif 
 #ifdef SOFTAP
 #ifdef SOFTAP_TLV_CFG
@@ -8901,10 +8997,12 @@ wl_iw_event(struct net_device *dev, wl_event_msg_t *e, void* data)
 
 	case WLC_E_SCAN_COMPLETE:
 #if defined(WL_IW_USE_ISCAN)
-		if ((g_iscan) && (g_iscan->sysioc_pid >= 0) &&
+//		if ((g_iscan) && (g_iscan->sysioc_pid >= 0) &&
+		if ((g_iscan) && (g_iscan->tsk_ctl.thr_pid >= 0) &&
 			(g_iscan->iscan_state != ISCAN_STATE_IDLE))
 		{
-			up(&g_iscan->sysioc_sem);
+//			up(&g_iscan->sysioc_sem);
+			up(&g_iscan->tsk_ctl.sema);
 		} else {
 			cmd = SIOCGIWSCAN;
 			wrqu.data.length = strlen(extra);
@@ -9092,15 +9190,29 @@ wl_iw_bt_timerfunc(ulong data)
 	bt_local->timer_on = 0;
 	WL_TRACE(("%s\n", __FUNCTION__));
 	
-	up(&bt_local->bt_sem);
+	//up(&bt_local->bt_sem);
+        up(&bt_local->tsk_ctl.sema);
+
 }
 
 static int
 _bt_dhcp_sysioc_thread(void *data)
 {
+	tsk_ctl_t *tsk_ctl =  (tsk_ctl_t *)data;
+
+
 	DAEMONIZE("dhcp_sysioc");
 
-	while (down_interruptible(&g_bt->bt_sem) == 0) {
+//	while (down_interruptible(&g_bt->bt_sem) == 0) {
+	complete(&tsk_ctl->completed);
+
+	while (down_interruptible(&tsk_ctl->sema) == 0) {
+
+		SMP_RD_BARRIER_DEPENDS();
+		if (tsk_ctl->terminated) {
+			break;
+		}
+
 		if (g_bt->timer_on) {
 			del_timer_sync(&g_bt->timer);
 			g_bt->timer_on = 0;
@@ -9163,7 +9275,8 @@ _bt_dhcp_sysioc_thread(void *data)
 		del_timer_sync(&g_bt->timer);
 		g_bt->timer_on = 0;
 	}
-	complete_and_exit(&g_bt->bt_exited, 0);
+//	complete_and_exit(&g_bt->bt_exited, 0);
+	complete_and_exit(&tsk_ctl->completed, 0);
 }
 
 static void
@@ -9175,9 +9288,14 @@ wl_iw_bt_release(void)
 		return;
 	}
 
+#if 0
 	if (bt_local->bt_pid >= 0) {
 		KILL_PROC(bt_local->bt_pid, SIGTERM);
 		wait_for_completion(&bt_local->bt_exited);
+#else
+	if (bt_local->tsk_ctl.thr_pid >= 0) {
+		PROC_STOP(&bt_local->tsk_ctl);
+#endif
 	}
 	kfree(bt_local);
 	g_bt = NULL;
@@ -9193,7 +9311,7 @@ wl_iw_bt_init(struct net_device *dev)
 		return -ENOMEM;
 
 	memset(bt_dhcp, 0, sizeof(bt_info_t));
-	bt_dhcp->bt_pid = -1;
+//	bt_dhcp->bt_pid = -1;
 	g_bt = bt_dhcp;
 	bt_dhcp->dev = dev;
 	bt_dhcp->bt_state = BT_DHCP_IDLE;
@@ -9206,10 +9324,15 @@ wl_iw_bt_init(struct net_device *dev)
 	bt_dhcp->ts_dhcp_start = 0;
 	bt_dhcp->ts_dhcp_ok = 0;
 
+#if 0
 	sema_init(&bt_dhcp->bt_sem, 0);
 	init_completion(&bt_dhcp->bt_exited);
 	bt_dhcp->bt_pid = kernel_thread(_bt_dhcp_sysioc_thread, bt_dhcp, 0);
 	if (bt_dhcp->bt_pid < 0) {
+#else
+	PROC_START(_bt_dhcp_sysioc_thread, bt_dhcp, &bt_dhcp->tsk_ctl, 0);
+	if (bt_dhcp->tsk_ctl.thr_pid < 0) {
+#endif
 		WL_ERROR(("Failed in %s\n", __FUNCTION__));
 		return -ENOMEM;
 	}
@@ -9248,7 +9371,7 @@ int wl_iw_attach(struct net_device *dev, void * dhdp)
 	if (!iscan->iscan_ex_params_p)
 		return -ENOMEM;
 	iscan->iscan_ex_param_size = params_size;
-	iscan->sysioc_pid = -1;
+//	iscan->sysioc_pid = -1;
 	
 	g_iscan = iscan;
 	iscan->dev = dev;
@@ -9266,11 +9389,17 @@ int wl_iw_attach(struct net_device *dev, void * dhdp)
 	iscan->timer.data = (ulong)iscan;
 	iscan->timer.function = wl_iw_timerfunc;
 
+#if 0
 	sema_init(&iscan->sysioc_sem, 0);
 	init_completion(&iscan->sysioc_exited);
 	iscan->sysioc_pid = kernel_thread(_iscan_sysioc_thread, iscan, 0);
 	if (iscan->sysioc_pid < 0)
 		return -ENOMEM;
+#else
+	PROC_START(_iscan_sysioc_thread, iscan, &iscan->tsk_ctl, 0);
+	if (iscan->tsk_ctl.thr_pid < 0)
+		return -ENOMEM;
+#endif
 #endif 
 
 	iw = *(wl_iw_t **)netdev_priv(dev);
@@ -9309,10 +9438,16 @@ void wl_iw_detach(void)
 
 	if (!iscan)
 		return;
+#if 0
 	if (iscan->sysioc_pid >= 0) {
 		KILL_PROC(iscan->sysioc_pid, SIGTERM);
 		wait_for_completion(&iscan->sysioc_exited);
 	}
+#else
+	if (iscan->tsk_ctl.thr_pid >= 0) {
+		PROC_STOP(&iscan->tsk_ctl);
+	}	
+#endif
 	MUTEX_LOCK_WL_SCAN_SET();
 	while (iscan->list_hdr) {
 		buf = iscan->list_hdr->next;

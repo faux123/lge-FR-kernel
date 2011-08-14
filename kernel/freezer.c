@@ -100,18 +100,28 @@ bool freeze_task(struct task_struct *p, bool sig_only)
 		if (!sig_only || should_send_signal(p))
 			set_freeze_flag(p);
 		else
+		{
+			if (!strcmp(p->comm, "nvrm_daemon"))
+			{
+				pr_err("%s: %s's sig_only: %d\n", __func__, p->comm, sig_only);
+				pr_err("%s: Setting freeze flag failed\n", p->comm);
+			}
 			return false;
+		}
 	}
 
 	if (should_send_signal(p)) {
 		if (!signal_pending(p))
 			fake_signal_wake_up(p);
 	} else if (sig_only) {
+		if (!strcmp(p->comm, "nvrm_daemon"))
+		{
+			pr_err("%s: %s has PF_FREEZER_NOSIG cleared\n", __func__, p->comm);
+		}
 		return false;
 	} else {
 		wake_up_state(p, TASK_INTERRUPTIBLE);
 	}
-
 	return true;
 }
 

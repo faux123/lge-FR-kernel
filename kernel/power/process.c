@@ -15,6 +15,7 @@
 #include <linux/syscalls.h>
 #include <linux/freezer.h>
 #include <linux/wakelock.h>
+#include <linux/sched.h>
 
 /* 
  * Timeout for stopping processes
@@ -28,6 +29,16 @@ static inline int freezeable(struct task_struct * p)
 	    (p->exit_state != 0))
 		return 0;
 	return 1;
+}
+
+static void dump_all_threads_stack(void)
+{
+	struct task_struct *ts;
+
+	list_for_each_entry(ts, &init_task.tasks, tasks) {
+		pr_err("\n name = %s", ts->comm ? ts->comm : "no_name");
+		show_stack(ts, NULL);
+	}
 }
 
 static int try_to_freeze_tasks(bool sig_only)
@@ -96,7 +107,11 @@ static int try_to_freeze_tasks(bool sig_only)
 			task_lock(p);
 			if (freezing(p) && !freezer_should_skip(p) &&
 							elapsed_csecs > 100)
+			{
 				printk(KERN_ERR " %s\n", p->comm);
+				if (!strcmp(p->comm, "nvrm_daemon"))
+					dump_all_threads_stack();
+			}
 			cancel_freezing(p);
 			task_unlock(p);
 		} while_each_thread(g, p);

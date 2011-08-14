@@ -540,7 +540,7 @@ Ap20EmcTimingSet(
 
     for (i = 0; i < s_Ap20EmcConfig.EmcTimingRegNum; i++)
     {
-	    //20110218, , DVFS patch [START]
+	    //20110218, cs77.ha@lge.com, DVFS patch [START]
 	    #if 1
         if (s_Ap20EmcConfig.pEmcTimingReg[i] == EMC_DLL_XFORM_DQS_0)
         {
@@ -554,7 +554,7 @@ Ap20EmcTimingSet(
 	    #else
         if (i == EMC_CFG_DIG_DLL_INDEX)
 	    #endif
-	    //20110218, , DVFS patch [END]
+	    //20110218, cs77.ha@lge.com, DVFS patch [END]
             d = pEmcConfig->EmcDigDll;
         else
             d = pEmcConfig->pOdmEmcConfig->EmcTimingParameters[i];
@@ -584,12 +584,17 @@ Ap20EmcTimingSetFinish(
         return;
 
     a = (((NvU32)(s_pEmcBaseReg)) + EMC_INTSTATUS_0);
+//20110318, jm1.lee@lge.com, nVidia recommandation for no LCD response [START]
+#if 0
     for (;;)
     {
         d = NV_DRF_VAL(EMC, INTSTATUS, CLKCHANGE_COMPLETE_INT, NV_READ32(a));
         if (d)
             break;
     }
+#endif
+    NvOsWaitUS(10);
+//20110318, jm1.lee@lge.com, nVidia recommandation for no LCD response [END]
 
     a = (((NvU32)(s_pEmcBaseReg)) + EMC_CFG_DIG_DLL_0);
     NV_WRITE32(a, pEmcConfig->EmcDigDll);

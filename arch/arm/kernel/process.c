@@ -92,10 +92,10 @@ void arm_machine_restart(char mode, const char *cmd)
 	 */
 
 #if defined (CONFIG_MACH_STAR)
-	unsigned char tmpbuf[2];
+	unsigned char tmpbuf[3] = { NULL, };
         if (cmd)
         {
-         strncpy(tmpbuf, cmd, 1);
+         strncpy(tmpbuf, cmd, 3);
         }
         else
         {
@@ -116,10 +116,10 @@ void arm_machine_restart(char mode, const char *cmd)
 		tmpbuf[0] ='w';
 		break;
 	}
-	write_cmd_reserved_buffer(tmpbuf,1);
+	write_cmd_reserved_buffer(tmpbuf,3);
 #endif
 
-//20110124, , fix lockup during reset [START]
+//20110124, byoungwoo.yoon@lge.com, fix lockup during reset [START]
 #if defined(CONFIG_MACH_STAR)
     if ( cmd == NULL )
 	    cpu_proc_fin();
@@ -128,7 +128,7 @@ void arm_machine_restart(char mode, const char *cmd)
 #else
 	cpu_proc_fin();
 #endif
-//20110124, , fix lockup during reset [END]
+//20110124, byoungwoo.yoon@lge.com, fix lockup during reset [END]
 
 	/*
 	 * Tell the mm system that we are going to reboot -

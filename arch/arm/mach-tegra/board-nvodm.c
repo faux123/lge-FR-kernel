@@ -1599,7 +1599,8 @@ static struct platform_device *nvodm_devices[] __initdata = {
 
 //20100419  for headset detection [LGE_START]
 #if defined(CONFIG_MACH_STAR)
-    &star_headset_device,			//for not boot
+   // &star_headset_device,			//for not boot
+   &star_wm8994_pdevice,			//heejeong.seo@lge.com 20110621
 #endif /* CONFIG_MACH_STAR */
 //20100419  for headset detection [LGE_END]
 
@@ -1609,7 +1610,8 @@ static struct platform_device *nvodm_devices[] __initdata = {
 
 //20100704  jongik's wm8994 driver porting [LGE_START]
 #if defined(CONFIG_MACH_STAR)
-    &star_wm8994_pdevice,		//for not boot
+   // &star_wm8994_pdevice,		//for not boot
+   &star_headset_device,			//heejeong.seo@lge.com 20110621
 #endif /* CONFIG_MACH_STAR */
 //20100704  jongik's wm8994 driver porting [LGE_END]
 #if defined(CONFIG_ANDROID_RAM_CONSOLE)
@@ -1701,7 +1703,7 @@ static void __init tegra_register_ifxn721(void)
     pSpiDeviceInfo = NvOdmQuerySpiGetDeviceInfo(NvOdmIoModule_Spi, instance, cs);
     if (pSpiDeviceInfo && pSpiDeviceInfo->IsSlave)
         return;
-
+/*
  //Set SRDY pin as interrupt 	
     err = NvRmGpioAcquirePinHandle(s_hGpioGlobal, port, pin, &hPin);
     if (err)
@@ -1715,6 +1717,7 @@ static void __init tegra_register_ifxn721(void)
     printk("[tegra_spi]Register ifxn721 SPI driver\n");
 
     tegra_spi_board_info[0].irq = irq; //SRDY
+*/    
     /* FIXME, instance need not be same as bus number. */
     tegra_spi_board_info[0].bus_num = instance;
     tegra_spi_board_info[0].chip_select = cs;
@@ -1935,6 +1938,7 @@ static void __init register_mdm6600(void)
 //20100613-1, , add spi slave mode [START]
 	if (pSpiDeviceInfo && pSpiDeviceInfo->IsSlave)
 	{	//slave mode ; mrdy pin works as interrupt
+/*	
 			err = NvRmGpioAcquirePinHandle(s_hGpioGlobal, port[0], pin[0], &hPin);
 		if (err)
 		{
@@ -1944,6 +1948,7 @@ static void __init register_mdm6600(void)
 		NvRmGpioConfigPins(s_hGpioGlobal, &hPin, 1, NvRmGpioPinMode_InputInterruptFallingEdge);
 		NvRmGpioGetIrqs(s_hRmGlobal, &hPin, &irq, 1);
 			tegra_spi_board_info[id].irq = irq; //SRDY
+*/			
 		/* FIXME, instance need not be same as bus number. */
 			tegra_spi_board_info[id].bus_num = instance;
 			tegra_spi_board_info[id].chip_select = cs;
@@ -2216,7 +2221,7 @@ static NvBool sensor_poweron()
 
 	} while ( mvolt_ldo7 !=0 || mvolt_ldo8  != 0 );
 
-	msleep(400);
+	msleep(3000);
 	
         do {
 
@@ -2297,13 +2302,28 @@ static void sensor_workaround()
                  goto error_open_gpio_pin_acquire_fail;
          }  
 
-	NvOdmGpioSetState(hGpio,hSclGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hSclGpioPinHandle, 5 );
-	NvOdmGpioSetState(hGpio,hSdaGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hSdaGpioPinHandle, 5 );
-	NvOdmGpioSetState(hGpio,hHalGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hHalGpioPinHandle, 5 );
-	NvOdmGpioSetState(hGpio,hComGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hComGpioPinHandle, 5 );
-	NvOdmGpioSetState(hGpio,hGyrGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hGyrGpioPinHandle, 5 );
-	NvOdmGpioSetState(hGpio,hMotGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hMotGpioPinHandle, 5 );
-	NvOdmGpioSetState(hGpio,hProGpioPinHandle , 0x0); NvOdmGpioConfig(hGpio, hProGpioPinHandle, 5 );
+// LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-05-27, [P999GB] Invalid GPIO configuration
+	NvOdmGpioConfig(hGpio, hSclGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hSclGpioPinHandle, 0);
+
+	NvOdmGpioConfig(hGpio, hSdaGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hSdaGpioPinHandle, 0);
+
+	NvOdmGpioConfig(hGpio, hHalGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hHalGpioPinHandle, 0);
+
+	NvOdmGpioConfig(hGpio, hComGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hComGpioPinHandle, 0);
+
+	NvOdmGpioConfig(hGpio, hGyrGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hGyrGpioPinHandle, 0);
+
+	NvOdmGpioConfig(hGpio, hMotGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hMotGpioPinHandle, 0);
+
+	NvOdmGpioConfig(hGpio, hProGpioPinHandle, NvOdmGpioPinMode_Output);
+	NvOdmGpioSetState(hGpio,hProGpioPinHandle, 0);
+// LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-05-27, [P999GB] Invalid GPIO configuration
 
        if (!sensor_poweron())
        {

@@ -1285,6 +1285,10 @@ struct block_device_operations {
 						unsigned long long);
 	int (*revalidate_disk) (struct gendisk *);
 	int (*getgeo)(struct block_device *, struct hd_geometry *);
+#if defined (CONFIG_RAMZSWAP)
+        /* this callback is with swap_lock and sometimes page table lock held */
+        void (*swap_slot_free_notify) (struct block_device *, unsigned long);
+#endif
 	struct module *owner;
 };
 

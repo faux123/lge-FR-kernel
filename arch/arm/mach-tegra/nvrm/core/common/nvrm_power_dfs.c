@@ -1538,9 +1538,9 @@ static NvRmPmRequest DfsThread(NvRmDfs* pDfs)
         if (NeedClockUpdate || pDfs->VoltageScaler.UpdateFlag ||
             pDfs->ThermalThrottler.TcorePolicy.UpdateFlag)
         {
-            NvRmPrivLockSharedPll();
             if (!pDfs->VoltageScaler.StopFlag)
             {
+                NvRmPrivLockSharedPll();
                 // Check temperature and throttle DFS clocks if necessry. Make
                 // sure V/F scaling is running while throttling is in progress.
                 pDfs->VoltageScaler.UpdateFlag =
@@ -1556,8 +1556,8 @@ static NvRmPmRequest DfsThread(NvRmDfs* pDfs)
                 NvOsIntrMutexLock(pDfs->hIntrMutex);
                 pDfs->CurrentKHz = DfsKHz;
                 NvOsIntrMutexUnlock(pDfs->hIntrMutex);
+                NvRmPrivUnlockSharedPll();
             }
-            NvRmPrivUnlockSharedPll();
 
             // Complete synchronous busy hint processing.
             if (pDfs->BusySyncState == NvRmDfsBusySyncState_Execute)
@@ -2729,7 +2729,6 @@ void NvRmPrivDfsSuspend(NvOdmSocPowerState state)
             NvRmMilliVolts v = NV_MAX(pDvs->DvsCorner.SystemMv,
                                       NV_MAX(pDvs->DvsCorner.EmcMv,
                                              pDvs->DvsCorner.ModulesMv));
-            v = NV_MAX(v, pDvs->MinCoreMv);
 
             // If CPU rail returns to default level by PMU underneath DVFS
             // need to synchronize voltage after LP1 same way as after LP2
