@@ -39,7 +39,7 @@
 #include "nvodm_services.h"
 #include "nvodm_query_discovery.h"
 #include "nvos.h"
-#include <nvodm_gyroscope_accel.h>
+#include "nvodm_gyroscope_accel.h"
 #include <linux/delay.h>
 #include <linux/kernel.h>
 

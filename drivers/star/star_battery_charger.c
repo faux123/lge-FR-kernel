@@ -60,7 +60,7 @@
 //20100926, jh.ahn@lge.com, Communication with BatteryService for AT Command [END]
 //20100824, jh.ahn@lge.com, get capacity using battery voltage for demo [START]
 #if defined (USE_ONETIME_VOLTAGE_CAPACITY)
-#include <star_battery_charger.h> // 100823 jh.ahn@lge.com
+#include "star_battery_charger.h" // 100823 jh.ahn@lge.com
 #endif // USE_ONETIME_VOLTAGE_CAPACITY
 //20100824, jh.ahn@lge.com, get capacity using battery voltage for demo [END]
 
