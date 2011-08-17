@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 LGE, Inc.
  *
- * Author: Taewan.kim <>
+ * Author: Taewan.kim <taewan.kim@lge.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -224,6 +224,7 @@ static void star_proxi_vddio_vi_power_onoff( NvU32 vdd_id, NvBool is_enable )
 	NvOdmServicesPmuClose(h_pmu);
 }
 
+#if	0
 static NvU8 star_read_vo_bit(ProximityDevice *data)
 {
     NvU8 vo = 0;
@@ -279,6 +280,28 @@ static void star_proxi_workqueue_func(struct work_struct *work)
 		star_proxi_write_reg(&s_proximity, 0x04, 0x03 );
 	}
 }
+#else
+// LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-05-22, [P999_GB] : status update
+static void star_proxi_workqueue_func(struct work_struct *work)
+{
+	NvU8	status;
+
+    star_proxi_read_reg(&s_proximity, 0x00, &status);
+	status	=	(status & 1);
+
+	if (status == s_proximity.MVO) {	// Interrupt mode
+		atomic_set(&proxi_status, status ? 0 : 1);
+
+		input_report_abs(s_proximity.input_dev, ABS_DISTANCE, atomic_read(&proxi_status));
+		input_sync(s_proximity.input_dev);
+
+		star_proxi_write_reg(&s_proximity, 0x06, 0x00 );
+
+		printk("proximity value(1) = %d\n", atomic_read(&proxi_status));
+	}
+}
+// LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-05-22, [P999_GB] : status update
+#endif
 
 static void star_proxi_interrupt_handler(void *arg)
 {
@@ -301,7 +324,6 @@ static void star_proxi_interrupt_handler(void *arg)
 	else
 		star_proxi_write_reg(&s_proximity, 0x02, 0x20 );
 	
-
 	star_proxi_write_reg(&s_proximity, 0x06, 0x18 );
 
 	#if STAR_PROX_DEBUG
@@ -312,6 +334,7 @@ static void star_proxi_interrupt_handler(void *arg)
    	NvOdmGpioInterruptMask(s_proximity.proxi_out_intr, NV_FALSE);
     NvOdmGpioInterruptDone(s_proximity.proxi_out_intr);
 }
+
 static bool s_shutdown_mode = false;
 static void star_proxi_enable(ProximityDevice *data)
 {
@@ -325,13 +348,17 @@ static void star_proxi_enable(ProximityDevice *data)
 
 	s_proximity.MVO = 0;
 	
-
     if (data->use_int_mode)
         NvOdmGpioInterruptMask(data->proxi_out_intr, NV_FALSE);//Interrupt Enable(NV_FALSE) Procedure 2
     else
         hrtimer_start(&data->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 
     proxi_enabled = true;
+
+	atomic_set(&proxi_status, 1);
+
+	input_report_abs(s_proximity.input_dev, ABS_DISTANCE, atomic_read(&proxi_status));
+	input_sync(s_proximity.input_dev);
 }
 
 static void star_proxi_disable(ProximityDevice *data)
@@ -507,6 +534,7 @@ static int __init proximity_probe(struct platform_device *pdev)
 	port = 'w'-'a';
 	pin = 2;
 	#else
+	#error PROXI_OUT PIN not assigned
 	#endif
 
     lprintk(D_PROXI, "[star Proximity] start!!!--------------------------------------------------------------------------\n");
@@ -730,6 +758,6 @@ static void __exit proximity_exit(void)
 module_init(proximity_init);
 module_exit(proximity_exit);
 
-MODULE_AUTHOR("");
+MODULE_AUTHOR("sk.hwang@lge.com");
 MODULE_DESCRIPTION("star proximity driver");
 MODULE_LICENSE("GPL");

@@ -635,7 +635,7 @@ static int fsl_ep_disable(struct usb_ep *_ep)
 
 #if defined(CONFIG_ARCH_TEGRA)
 	/* Touch the registers if cable is connected and phy is on */
-	if (fsl_readl(&usb_sys_regs->vbus_wakeup) & USB_SYS_VBUS_STATUS)
+	if (udc_controller->vbus_active)
 #endif
 	{
 		/* disable ep on controller */
@@ -955,7 +955,7 @@ static int fsl_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 
 #if defined(CONFIG_ARCH_TEGRA)
 	/* Touch the registers if cable is connected and phy is on */
-	if (fsl_readl(&usb_sys_regs->vbus_wakeup) & USB_SYS_VBUS_STATUS)
+	if (udc_controller->vbus_active)
 #endif
 	{
 		epctrl = fsl_readl(&dr_regs->endptctrl[ep_num]);
@@ -1010,7 +1010,7 @@ static int fsl_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 out:
 #if defined(CONFIG_ARCH_TEGRA)
 	/* Touch the registers if cable is connected and phy is on */
-	if (fsl_readl(&usb_sys_regs->vbus_wakeup) & USB_SYS_VBUS_STATUS)
+	if (udc_controller->vbus_active)
 #endif
 	{
 		epctrl = fsl_readl(&dr_regs->endptctrl[ep_num]);
@@ -1089,7 +1089,7 @@ static void fsl_ep_fifo_flush(struct usb_ep *_ep)
 
 #if defined(CONFIG_ARCH_TEGRA)
 	/* Touch the registers if cable is connected and phy is on */
-	if (!(fsl_readl(&usb_sys_regs->vbus_wakeup) & USB_SYS_VBUS_STATUS))
+	if (!udc_controller->vbus_active)
 		return;
 #endif
 
@@ -1884,20 +1884,20 @@ static void bus_resume(struct fsl_udc *udc)
 }
 
 /* Clear up all ep queues */
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 static int reset_queues(struct fsl_udc *udc)
 #else
 static int reset_queues(struct fsl_udc *udc, bool flag)
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 {
 	u8 pipe;
 
 	for (pipe = 0; pipe < udc->max_pipes; pipe++)
 		udc_reset_ep_queue(udc, pipe);
 
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 	/* report disconnect; the driver is already quiesced */
 	spin_unlock(&udc->lock);
@@ -1913,7 +1913,7 @@ static int reset_queues(struct fsl_udc *udc, bool flag)
 		spin_lock(&udc->lock);
 	}
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 
 	return 0;
 }
@@ -1966,26 +1966,26 @@ static void reset_irq(struct fsl_udc *udc)
 	VDBG("Bus reset");
 	/* Reset all the queues, include XD, dTD, EP queue
 	 * head and TR Queue */
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 	reset_queues(udc);
 #else
 	reset_queues(udc, false);
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 	udc->usb_state = USB_STATE_DEFAULT;
 #else
 	if (fsl_readl(&dr_regs->portsc1) & PORTSCX_PORT_RESET) {
 		VDBG("Bus reset");
 		/* Reset all the queues, include XD, dTD, EP queue
 		 * head and TR Queue */
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 		reset_queues(udc);
 #else
 		reset_queues(udc, false);
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 		udc->usb_state = USB_STATE_DEFAULT;
 	} else {
 		VDBG("Controller reset");
@@ -1994,13 +1994,13 @@ static void reset_irq(struct fsl_udc *udc)
 		dr_controller_setup(udc);
 
 		/* Reset all internal used Queues */
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 		reset_queues(udc);
 #else
 		reset_queues(udc, false);
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 
 		ep0_setup(udc);
 
@@ -2033,6 +2033,27 @@ static void fsl_udc_charger_detection(struct work_struct* work)
 	}
 }
 
+static void fsl_ep_fifo_flush_all(void)
+{
+	u32 bits = 0xFFFFFFFF;
+	unsigned long timeout;
+#define FSL_UDC_FLUSH_TIMEOUT 1000
+
+	timeout = jiffies + FSL_UDC_FLUSH_TIMEOUT;
+	do {
+		fsl_writel(bits, &dr_regs->endptflush);
+
+		/* Wait until flush complete */
+		while (fsl_readl(&dr_regs->endptflush)) {
+			if (time_after(jiffies, timeout)) {
+				ERR("ep flush timeout\n");
+				return;
+			}
+			cpu_relax();
+		}
+		/* See if we need to flush again */
+	} while (fsl_readl(&dr_regs->endptstatus) & bits);
+}
 #if defined(CONFIG_ARCH_TEGRA)
 /*
  * Restart device controller in the OTG mode on VBUS detection
@@ -2063,14 +2084,15 @@ static void fsl_udc_vbus_work(struct work_struct* vbus_work)
 		fsl_udc_restart(udc);
 	} else {
 		spin_lock(&udc->lock);
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 		reset_queues(udc);
 #else
 		reset_queues(udc, true);
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 		spin_unlock(&udc->lock);
+		fsl_ep_fifo_flush_all();
 		dr_controller_stop(udc);
 		platform_udc_clk_suspend();
 	}
@@ -2128,7 +2150,7 @@ static void fsl_udc_irq_work(struct work_struct* irq_work)
 		/* set vbus active  and enable the usb clocks */
 		udc->vbus_active = 1;
 		platform_udc_clk_resume();
-		fsl_udc_restart(udc);
+			fsl_udc_restart(udc);
 		/* Schedule work to wait for 1000 msec and check for
 		 * charger if setup packet is not received */
 		schedule_delayed_work(&udc->work, USB_CHARGER_DETECTION_WAIT_TIME_MS);
@@ -2141,18 +2163,20 @@ static void fsl_udc_irq_work(struct work_struct* irq_work)
 		cancel_delayed_work(&udc->work);
 		/* Reset all internal Queues and inform client driver */
 		spin_lock(&udc->lock);
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 		reset_queues(udc);
 #else
 		reset_queues(udc, true);
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 		spin_unlock(&udc->lock);
+		/* flush all the eps before turing off the clocks */
+		fsl_ep_fifo_flush_all();
 		/* stop the controller and turn off the clocks */
 		dr_controller_stop(udc);
-		platform_udc_clk_suspend();
 		udc->vbus_active = 0;
+		platform_udc_clk_suspend();
 		udc->usb_state = USB_STATE_DEFAULT;
 		udc->current_limit_ma = 0;
 		if (udc->transceiver)
@@ -2312,7 +2336,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 	udc_controller->gadget.dev.driver = &driver->driver;
 	spin_unlock_irqrestore(&udc_controller->lock, flags);
 
-//20100822, , for USB mode switching [START]
+//20100822, jm1.lee@lge.com, for USB mode switching [START]
 #if defined(CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET)
         retval = device_add(&udc_controller->gadget.dev);
 	if (retval < 0){
@@ -2320,7 +2344,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 		goto out;
        }
 #endif
-//20100822, , for USB mode switching [END]
+//20100822, jm1.lee@lge.com, for USB mode switching [END]
 	/* bind udc driver to gadget driver */
 	retval = driver->bind(&udc_controller->gadget);
 	if (retval) {
@@ -2405,7 +2429,7 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	udc_controller->gadget.dev.driver = NULL;
 	udc_controller->driver = NULL;
 
-//20100822, , for USB mode switching
+//20100822, jm1.lee@lge.com, for USB mode switching
 #if defined(CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET)
 	device_del(&udc_controller->gadget.dev);
 #endif
@@ -2904,7 +2928,7 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
 	dev_set_name(&udc_controller->gadget.dev, "gadget");
 	udc_controller->gadget.dev.release = fsl_udc_release;
 	udc_controller->gadget.dev.parent = &pdev->dev;
-//20100822, , for USB mode switching [START]
+//20100822, jm1.lee@lge.com, for USB mode switching [START]
 #if defined(CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET)
 	device_initialize(&udc_controller->gadget.dev);
 #else
@@ -2913,7 +2937,7 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
 		goto err_free_irq;
 
 #endif
-//20100822, , for USB mode switching [END]
+//20100822, jm1.lee@lge.com, for USB mode switching [END]
 	/* setup QH and epctrl for ep0 */
 	ep0_setup(udc_controller);
 
@@ -3047,13 +3071,13 @@ static int fsl_udc_suspend(struct platform_device *pdev, pm_message_t state)
 	{
 		spin_lock(&udc_controller->lock);
 		/* Reset all internal Queues and inform client driver */
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [START]
 #if 0
 		reset_queues(udc_controller);
 #else
 		reset_queues(udc_controller, true);
 #endif
-//20110107, , resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
+//20110107, jm1.lee@lge.com, resolve the problem of UMS disconnection during transferring files(nVidia patch) [END]
 		udc_controller->vbus_active = 0;
 		udc_controller->usb_state = USB_STATE_DEFAULT;
 		spin_unlock(&udc_controller->lock);

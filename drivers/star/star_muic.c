@@ -27,7 +27,7 @@
 #include <linux/workqueue.h>
 #include <linux/wakelock.h>  
 #include <linux/freezer.h>
-//20101117, , for autorun
+//20101117, jm1.lee@lge.com, for autorun
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 #include <linux/switch.h>
 #endif
@@ -88,18 +88,18 @@ typedef struct MuicDeviceRec
     NvOdmGpioPinHandle      hSdaGpioPinHandle;
 #endif	
     struct wake_lock wlock;
-//20101117, , for autorun
+//20101117, jm1.lee@lge.com, for autorun
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
     struct switch_dev sdev_autorun;
 #endif
 } Muic_Device;
 
-//20101117, , for autorun
+//20101117, jm1.lee@lge.com, for autorun
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 #define	DRIVER_NAME_FOR_AUTORUN		"TEGRA_UDC_AUTORUN"
 #endif
 
-//20100526, , charging_ic Function [START]
+//20100526, jh.ahn@lge.com, charging_ic Function [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
 typedef enum {
     CHG_IC_DEFAULT_MODE=0,    		/* 0  */
@@ -115,10 +115,10 @@ extern void charging_ic_active(NvU32);
 extern void charging_ic_deactive(void);
 extern max8922_status get_charging_ic_status(void);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-//20100526, , charging_ic Function [END]
+//20100526, jh.ahn@lge.com, charging_ic Function [END]
 
 static star_shutdown = 0;
-//20101117, , for autorun [START]
+//20101117, jm1.lee@lge.com, for autorun [START]
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 static ssize_t print_switch_name_for_autorun(struct switch_dev *sdev, char *buf)
 {
@@ -131,7 +131,7 @@ static ssize_t print_switch_state_for_autorun(struct switch_dev *sdev, char *buf
 			(sdev->state ? "online" : "offline"));
 }
 #endif
-//20101117, , for autorun [END]
+//20101117, jm1.lee@lge.com, for autorun [END]
 
 #ifdef _MUIC_GPIO_I2C_
 
@@ -652,7 +652,7 @@ int max14526_muic_init(TYPE_RESET reset)
 #if !defined(CONFIG_MACH_STAR)
     USIF_ctrl(USIF_IPC);
 #endif
-    //20100526, , Charging IC Reset [START]
+    //20100526, jh.ahn@lge.com, Charging IC Reset [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     if ( !reset )
     {
@@ -660,7 +660,7 @@ int max14526_muic_init(TYPE_RESET reset)
         charging_ic_deactive();
     }
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Charging IC Reset [END]
+    //20100526, jh.ahn@lge.com, Charging IC Reset [END]
 
     wake_unlock(&s_hMuicHandle.wlock);
     current_device = DEVICE_NONE;
@@ -859,12 +859,12 @@ void Set_MAX14526_Charger_Detect(NvU8 int_status_reg)
         Set_MAX14526_ADDR(SW_CTRL_REG, COMN1_TO_DN1 | COMP2_TO_DP2);
 
         /* Enable charger IC in TA mode */
-        //20100526, , Enable charger IC in TA mode [START]
+        //20100526, jh.ahn@lge.com, Enable charger IC in TA mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
         lprintk(D_MUIC, "%s: CHG_IC_TA_MODE(%d) \n", __func__, CHG_IC_TA_MODE);	
         charging_ic_active(CHG_IC_TA_MODE);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-        //20100526, , Enable charger IC in TA mode [END]
+        //20100526, jh.ahn@lge.com, Enable charger IC in TA mode [END]
         wake_lock(&s_hMuicHandle.wlock);
         current_device = DEVICE_USB_CABLE;
     }
@@ -875,12 +875,12 @@ void Set_MAX14526_Charger_Detect(NvU8 int_status_reg)
         Set_MAX14526_ADDR(SW_CTRL_REG, COMP2_TO_HZ | COMN1_TO_HZ);
      
         /* Enable charger IC in TA mode */
-        //20100526, , Enable charger IC in TA mode [START]
+        //20100526, jh.ahn@lge.com, Enable charger IC in TA mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
         lprintk(D_MUIC, "%s: CHG_IC_TA_MODE(%d) \n", __func__, CHG_IC_TA_MODE);	
         charging_ic_active(CHG_IC_TA_MODE);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-        //20100526, , Enable charger IC in TA mode [END]
+        //20100526, jh.ahn@lge.com, Enable charger IC in TA mode [END]
         current_device = DEVICE_TA_CHARGER;
     }
     // Enable 200K, Charger Pump, and ADC (0x01=0x13)
@@ -904,12 +904,12 @@ void Set_MAX14526_Factory_Mode_Detect(void)
     Set_MAX14526_ADDR(SW_CTRL_REG, COMP2_TO_U2 | COMN1_TO_U1);
    
     /* Turn on charger IC with FACTORY mode */
-    //20100526, , Turn on charger IC with FACTORY mode [START]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     lprintk(D_MUIC, "%s: CHG_IC_FACTORY_MODE(%d) \n", __func__, CHG_IC_FACTORY_MODE);	
     charging_ic_active(CHG_IC_FACTORY_MODE);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Turn on charger IC with FACTORY mode [END]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [END]
     wake_lock(&s_hMuicHandle.wlock);
     current_device = DEVICE_UART_CABLE;
 }
@@ -930,12 +930,12 @@ void Set_MAX14526_Develop_Mode_Detect(void)
    
 
     /* Turn on charger IC with FACTORY mode */
-    //20100526, , Turn on charger IC with FACTORY mode [START]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     lprintk(D_MUIC, "%s: CHG_IC_FACTORY_MODE(%d) \n", __func__, CHG_IC_FACTORY_MODE);	
     charging_ic_active(CHG_IC_FACTORY_MODE);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Turn on charger IC with FACTORY mode [END]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [END]
     wake_lock(&s_hMuicHandle.wlock);
     current_device = DEVICE_FACTORY_USB_CABLE;
 }
@@ -955,12 +955,12 @@ void Set_MAX14526_Usb_Mode_Detect(void)
     Set_MAX14526_ADDR(SW_CTRL_REG, COMP2_TO_DP2 | COMN1_TO_DN1);
     
     /* Turn on charger IC with Standard USB mode  */
-    //20100526, , Turn on charger IC with Standard USB mode [START]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with Standard USB mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     lprintk(D_MUIC, "%s: CHG_IC_DEFAULT_MODE(%d) \n", __func__, CHG_IC_DEFAULT_MODE);	
     charging_ic_active(CHG_IC_DEFAULT_MODE); 
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Turn on charger IC with Standard USB mode [END]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with Standard USB mode [END]
     wake_lock(&s_hMuicHandle.wlock);
     current_device = DEVICE_USB_CABLE;
 }
@@ -980,12 +980,12 @@ void Set_MAX14526_CP_USB_Mode(void){
     Set_MAX14526_ADDR(SW_CTRL_REG, COMP2_TO_U2 | COMN1_TO_U1);
 
     /* Turn on charger IC with FACTORY mode */
-    //20100526, , Turn on charger IC with FACTORY mode [START]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     lprintk(D_MUIC, "%s: CHG_IC_FACTORY_MODE(%d) \n", __func__, CHG_IC_FACTORY_MODE);	
     charging_ic_active(CHG_IC_FACTORY_MODE); 
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Turn on charger IC with FACTORY mode [END]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [END]
     wake_lock(&s_hMuicHandle.wlock);
     current_device = DEVICE_CP_USB_CABLE;
 }
@@ -1005,12 +1005,12 @@ void Set_MAX14526_CP_USB_Mode_PortSetting(void){
     Set_MAX14526_ADDR(SW_CTRL_REG, COMP2_TO_U2 | COMN1_TO_U1);
 
     /* Turn on charger IC with FACTORY mode */
-    //20100526, , Turn on charger IC with FACTORY mode [START]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     lprintk(D_MUIC, "%s: CHG_IC_DEFAULT_MODE(%d) \n", __func__, CHG_IC_DEFAULT_MODE);
     charging_ic_active(CHG_IC_DEFAULT_MODE);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Turn on charger IC with FACTORY mode [END]
+    //20100526, jh.ahn@lge.com, Turn on charger IC with FACTORY mode [END]
     wake_lock(&s_hMuicHandle.wlock);
     current_device = DEVICE_CP_USB_CABLE;
 }
@@ -1087,7 +1087,7 @@ void muic_initialize_max(TYPE_RESET reset)
     // Enable Interrupts (0x02 = 0x40)
     Set_MAX14526_ADDR(CTRL2_REG, INT_EN_M);
     
-    //20100526, , Charging IC Reset [START]
+    //20100526, jh.ahn@lge.com, Charging IC Reset [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
     if ( !reset )
     {
@@ -1095,7 +1095,7 @@ void muic_initialize_max(TYPE_RESET reset)
         charging_ic_deactive();
     }
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-    //20100526, , Charging IC Reset [END]
+    //20100526, jh.ahn@lge.com, Charging IC Reset [END]
     wake_unlock(&s_hMuicHandle.wlock);
 }
 
@@ -1110,7 +1110,13 @@ void Set_MAX14526_Device_None_Detect(NvU8 int_status_reg)
 
     // IDNO=0010? 56Kohm  :: CP USB MODE
     else if ((int_status_reg &IDNO_M )==IDNO_0010)  
+        // LGE_CHANGE [dojip.kim@lge.com] 2010-12-31, 
+        // [LGE_AP20] temporarily use the LT 56K ohm UART as AP UART
+#if 1 /* original code */
         Set_MAX14526_CP_USB_Mode();
+#else
+        Set_MAX14526_Develop_Mode_Detect();
+#endif
 
 
     // IDNO=0010? 910Kohm  :: CP USB MODE
@@ -1139,12 +1145,12 @@ void Set_MAX14526_Device_None_Detect(NvU8 int_status_reg)
             // COMP2 to H-Z / COMN1 to H-Z (0x03=0x24)
             Set_MAX14526_ADDR(SW_CTRL_REG, COMP2_TO_HZ | COMN1_TO_HZ);
             
-            //20100526, , Enable charger IC in TA mode [START]
+            //20100526, jh.ahn@lge.com, Enable charger IC in TA mode [START]
 #if defined(CONFIG_STAR_BATTERY_CHARGER)
             lprintk(D_MUIC, "%s: CHG_IC_TA_MODE(%d) \n", __func__, CHG_IC_TA_MODE);	
             charging_ic_active(CHG_IC_TA_MODE);
 #endif /* CONFIG_STAR_BATTERY_CHARGER */
-            //20100526, , Enable charger IC in TA mode [END]
+            //20100526, jh.ahn@lge.com, Enable charger IC in TA mode [END]
 
             current_device = DEVICE_TA_CHARGER;
             printk("-->> MUIC : %s : DEVICE_TA_CHARGER  \n",__func__);
@@ -1153,7 +1159,7 @@ void Set_MAX14526_Device_None_Detect(NvU8 int_status_reg)
         {
             // USB Detected
             Set_MAX14526_Usb_Mode_Detect();
-//20101117, , for autorun
+//20101117, jm1.lee@lge.com, for autorun
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
             switch_set_state(&s_hMuicHandle.sdev_autorun, 1);
 #endif
@@ -1172,7 +1178,7 @@ void MAX14526_Device_Detection(void)
 {
     NvU8 reg_value;
 
-    //20101002, , keep CP USB state after rebooting [START]
+    //20101002, jm1.lee@lge.com, keep CP USB state after rebooting [START]
     if(DEVICE_CP_USB_CABLE == boot_muic_state)
     {
         lprintk(D_MUIC, "CP Retain mode. \n");
@@ -1195,7 +1201,7 @@ void MAX14526_Device_Detection(void)
         }
         return;
     }
-    //20101002, , keep CP USB state after rebooting [END]
+    //20101002, jm1.lee@lge.com, keep CP USB state after rebooting [END]
     
     // Read INT_STAT_REG (0x04)
     reg_value = Get_MAX14526_ADDR(INT_STAT_REG); 	
@@ -1249,7 +1255,7 @@ void MAX14526_Device_Detection(void)
             if ((reg_value & VBUS_M) == 0){
                 // Exit AP USB Mode
                 max14526_muic_init(DEFAULT);
-//20101117, , for autorun
+//20101117, jm1.lee@lge.com, for autorun
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
                 switch_set_state(&s_hMuicHandle.sdev_autorun, 0);
 #endif
@@ -1411,7 +1417,7 @@ static int __init muic_probe(struct platform_device *pdev)
 #endif
     wake_lock_init(&s_hMuicHandle.wlock, WAKE_LOCK_SUSPEND, "muic_active");
 
-//20101117, , for autorun [START]
+//20101117, jm1.lee@lge.com, for autorun [START]
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
     s_hMuicHandle.sdev_autorun.name = DRIVER_NAME_FOR_AUTORUN;
     s_hMuicHandle.sdev_autorun.print_name = print_switch_name_for_autorun;
@@ -1422,7 +1428,7 @@ static int __init muic_probe(struct platform_device *pdev)
         goto err_sdev_unregister;
     }
 #endif
-//20101117, , for autorun [END]
+//20101117, jm1.lee@lge.com, for autorun [END]
 
     INIT_DELAYED_WORK(&muic_wq, muic_wq_func);
 
@@ -1440,12 +1446,12 @@ static int __init muic_probe(struct platform_device *pdev)
 
     muic_initialize_max(RESET);
 
-    //20100915, , move to late_initcall [START] 
+    //20100915, sunghoon.kim@lge.com, move to late_initcall [START] 
 #if 0		
     NvOdmOsSleepMS(400) ;
     MAX14526_Device_Detection();
 #endif		
-    //20100915, , move to late_initcall [STOP]  
+    //20100915, sunghoon.kim@lge.com, move to late_initcall [STOP]  
 
     return 0;
 
@@ -1453,12 +1459,12 @@ err_get_interrupt_handler:
 #ifndef _MUIC_GPIO_I2C_	
     NvOdmI2cClose(s_hMuicHandle.hOdmI2c);
 #endif
-//20101117, , for autorun [START]
+//20101117, jm1.lee@lge.com, for autorun [START]
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 err_sdev_unregister:
 	switch_dev_unregister(&s_hMuicHandle.sdev_autorun);
 #endif
-//20101117, , for autorun [END]
+//20101117, jm1.lee@lge.com, for autorun [END]
 err_open_i2c_handle:
     NvOdmGpioReleasePinHandle(s_hMuicHandle.hGpio, s_hMuicHandle.h_INT_N_MUIC);
     NvOdmGpioReleasePinHandle(s_hMuicHandle.hGpio, s_hMuicHandle.h_AP20_UART_SW);
@@ -1597,24 +1603,24 @@ static void __exit muic_exit(void)
 
 
 
-//20100911, , MUIC kernel command line parsing [START]
+//20100911, sunghoon.kim@lge.com, MUIC kernel command line parsing [START]
 static int __init muic_state(char *str)
 {
     int muic_value = simple_strtol(str, NULL, 0);
-    //20101002, , keep CP USB state after rebooting
+    //20101002, jm1.lee@lge.com, keep CP USB state after rebooting
     boot_muic_state = muic_value;
     printk(KERN_INFO "muic_state = %d\n",muic_value);
     return 1;
 }
 __setup("muic_state=", muic_state);
-//20100911, , MUIC kernel command line parsing [END]
+//20100911, sunghoon.kim@lge.com, MUIC kernel command line parsing [END]
 
 
 module_init(muic_init);
 module_exit(muic_exit);
 late_initcall(muic_late_init);
 
-MODULE_AUTHOR("");
+MODULE_AUTHOR("taewan.kim@lge.com");
 MODULE_DESCRIPTION("star MUIC Driver");
 MODULE_LICENSE("GPL");
 

@@ -5,7 +5,7 @@
  * Copyright (C) 2010 LGE, Inc.
  *
  *
- * Author: Kyungsik Lee <>
+ * Author: Kyungsik Lee <kyungsik.lee@lge.com>
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -281,7 +281,13 @@ static void cpwatcher_work_func(struct work_struct *wq)
 		cpwatcher_get_status(&status);
 		DBG("[CPW] %s(), status: %d\n", __FUNCTION__, status);
 
-		if (status) {//If High, CP error
+		if (status) 
+		{//If High, CP error
+
+// LGE_UPDATE_S eungbo.shim@lge.com 20110609 -- For RIL Recovery !! [EBS]
+			printk("###### CP RESET ####### Push the key 202 to Framework \n");
+// LGE_UPDATE_E eungbo.shim@lge.com 20110609 -- For RIL Recovery !! [EBS]
+
 			input_report_key(dev->input, EVENT_KEY, 1);
 			input_report_key(dev->input, EVENT_KEY, 0);
 			input_sync(dev->input);
@@ -504,9 +510,20 @@ static int cpwatcher_probe(struct platform_device *pdev)
 
     NvOdmGpioConfig(dev->hGpio, dev->hCP_status, NvOdmGpioPinMode_InputData);
 
+// LGE_UPDATE_S eungbo.shim@lge.com 20110609 -- For RIL Recovery !! [EBS]
+#if defined(EBS) 
     ret_status = NvOdmGpioInterruptRegister(dev->hGpio, &dev->hGpioInterrupt,
         dev->hCP_status, NvOdmGpioPinMode_InputInterruptAny,
 			cpwatcher_irq_handler, (void *) dev, 0);
+
+#else
+	ret_status = NvOdmGpioInterruptRegister(dev->hGpio, &dev->hGpioInterrupt,
+        dev->hCP_status, NvOdmGpioPinMode_InputInterruptRisingEdge,
+			cpwatcher_irq_handler, (void *) dev, 0);
+
+#endif 
+// LGE_UPDATE_E eungbo.shim@lge.com 20110609 -- For RIL Recovery !! [EBS]
+
     if (ret_status == NV_FALSE) {
 
         printk("[CPW] %s: Error\n", __FUNCTION__);

@@ -107,10 +107,10 @@ static int debug_enable_flag = 0x01;
 #define BL_POWER_STATE_ON 0x01
 #define BL_POWER_STATE_OFF 0x00
 
-// 101103 , Minimum Brightness level for HW Dimming
+// 101103 kyungsik.lee@lge.com, Minimum Brightness level for HW Dimming
 #define LCD_LED_DIM 1
-// 101017  added some variables to adjust backlight brightness
-// 101103 , Define parameters from global variables
+// 101017 sk.jang@lge.com added some variables to adjust backlight brightness
+// 101103 kyungsik.lee@lge.com, Define parameters from global variables
 #define BRIGHTNESS_MIN 30
 #define NUMERATOR1 6
 #define NUMERATOR2 14
@@ -177,7 +177,7 @@ static struct aat2870_drvdata_t *drvdata;
 //static spinlock_t intensity_lock; //km.lee
 
 
-static NvU8 BACKLIGHT_DEFAULT = 0x0B; //101017,  set the value to the current consumption '9.9mA'
+static NvU8 BACKLIGHT_DEFAULT = 0x0B; //101017, sk.jang@lge.com set the value to the current consumption '9.9mA'
 
 
 NvBool IsReadThreadStart = NV_TRUE;
@@ -596,7 +596,7 @@ star_bl_brightness_linearized(int intensity, int *level)
     int last_intensity; 
 
 
-	//101017,  Set the Backlight Brightness to be linearized.[START] 
+	//101017, sk.jang@lge.com Set the Backlight Brightness to be linearized.[START] 
 	if (intensity < BRIGHTNESS_MIN) {
 		
 		//Too low for intensity value
@@ -617,7 +617,7 @@ star_bl_brightness_linearized(int intensity, int *level)
 		//Too High for intensity value
 		ret = -EINVAL; 
 	}
-	//101017,  Set the Backlight Brightness to be linearized.[END]
+	//101017, sk.jang@lge.com Set the Backlight Brightness to be linearized.[END]
 
 	return ret;
 }  
@@ -636,7 +636,7 @@ star_bl_store_intensity(struct device *dev, struct device_attribute *attr, const
 
 	sscanf(buf, "%d", &intensity);//level range: 0 to 22 from aat2870 ds
 
-	//101103, , Replaced with function.
+	//101103, kyungsik.lee@lge.com, Replaced with function.
 	if (star_bl_brightness_linearized(intensity, &level)) {
 
 		printk("[BL] Invalid Intensity value: %d\n", intensity);
@@ -929,7 +929,7 @@ star_bl_store_onoff(struct device *dev, struct device_attribute *attr, const cha
 	return count;
 }
 
-//20110202, , force off [START]
+//20110202, cs77.ha@lge.com, force off [START]
 static void star_aat2870_reset(void);
 
 static ssize_t
@@ -960,7 +960,51 @@ star_bl_store_foff(struct device *dev, struct device_attribute *attr, const char
 
 	return count;
 }
-//20110202, , force off [END]
+
+//20110419 km.lee@lge.com LGD panel ver. info [START]
+static ssize_t
+star_show_panel_info(struct device *dev, struct device_attribute *attr, char *buf )
+{
+	NvOdmServicesGpioHandle h_gpio;
+	NvOdmGpioPinHandle  pin;
+	NvU32 val;
+	ssize_t rval;
+
+	h_gpio = NvOdmGpioOpen();
+	if( h_gpio != NULL ){
+		pin = NvOdmGpioAcquirePinHandle(h_gpio, 'j' - 'a', 5 );
+		if( pin ){
+            NvOdmGpioConfig( h_gpio, pin, NvOdmGpioPinMode_InputData );
+            NvOdmGpioGetState( h_gpio, pin, &val );
+            if( val == 0 ){
+                NvOdmGpioReleasePinHandle( h_gpio, pin );
+                NvOdmGpioClose( h_gpio );
+				sprintf(buf, "%d\n", val);
+				rval = (ssize_t)(strlen(buf) + 1);
+            }
+            else if( val == 1 ){
+                NvOdmGpioReleasePinHandle( h_gpio, pin );
+                NvOdmGpioClose( h_gpio );
+				sprintf(buf, "%d\n", val);
+				rval = (ssize_t)(strlen(buf) + 1);
+            }
+        }
+        else{
+			rval = -1;
+            NvOdmGpioClose(h_gpio);
+		}
+	}
+
+	return rval;
+}
+
+static ssize_t
+star_store_panel_info(struct device *dev, struct device_attribute *attr, char *buf, size_t count )
+{
+	return 0;
+}
+//20110419 km.lee@lge.com LGD panel ver. info [END]
+//20110202, cs77.ha@lge.com, force off [END]
 
 static DEVICE_ATTR(intensity, 0666, star_bl_show_intensity, star_bl_store_intensity);
 static DEVICE_ATTR(alc_level, 0444, star_bl_show_alc_level, NULL);
@@ -968,10 +1012,12 @@ static DEVICE_ATTR(alc, 0664, star_bl_show_alc, star_bl_store_alc);
 static DEVICE_ATTR(onoff, 0666, star_bl_show_onoff, star_bl_store_onoff);
 static DEVICE_ATTR(hwdim, 0666, star_bl_show_hwdim, star_bl_store_hwdim);
 static DEVICE_ATTR(lsensor_onoff, 0666, star_bl_show_lsensor_onoff, star_bl_store_lsensor_onoff);
+//20110419 km.lee@lge.com LGD panel ver. info
+static DEVICE_ATTR(panel_info, 0666, star_show_panel_info, star_store_panel_info);
 //static DEVICE_ATTR(alc_reg, 0666, alc_reg_show, alc_reg_store);
-//20110202, , force off [START]
+//20110202, cs77.ha@lge.com, force off [START]
 static DEVICE_ATTR(foff, 0666, star_bl_show_onoff, star_bl_store_foff);
-//20110202, , force off [END]
+//20110202, cs77.ha@lge.com, force off [END]
 
 
 static struct attribute *star_bl_attributes[] = {
@@ -981,9 +1027,11 @@ static struct attribute *star_bl_attributes[] = {
 	&dev_attr_onoff.attr,
 	&dev_attr_hwdim.attr,
 	&dev_attr_lsensor_onoff.attr,
-    //20110202, , force off [START]
+//20110419 km.lee@lge.com LGD panel ver. info
+	&dev_attr_panel_info,
+    //20110202, cs77.ha@lge.com, force off [START]
 	&dev_attr_foff.attr,
-    //20110202, , force off [END]
+    //20110202, cs77.ha@lge.com, force off [END]
 	NULL,
 };
 
