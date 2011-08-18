@@ -52,6 +52,13 @@ config LOGGER
 source "drivers/star/sensor/Kconfig"
 source "drivers/star/sensor.module/Kconfig"
 
+config STAR_VIBRATOR
+    bool "Star vibrator Driver"
+    default y
+    depends on MACH_STAR
+    help
+      Vibrator driver
+
 config STAR_POWERKEY
     bool "Star Powerkey Driver"
     default y
