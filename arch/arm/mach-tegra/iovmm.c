@@ -72,9 +72,6 @@ static LIST_HEAD(iovmm_groups);
 static DEFINE_MUTEX(iovmm_list_lock);
 static struct kmem_cache *iovmm_cache;
 
-int nvmap_get_unpinned_iovmm_memory(int *total_unpinned_mem,
-	int *largest_unpinned_mem);
-
 static tegra_iovmm_addr_t iovmm_align_up(struct tegra_iovmm_device *dev,
 	tegra_iovmm_addr_t addr)
 {
@@ -130,7 +127,6 @@ static int tegra_iovmm_read_proc(char *page, char **start, off_t off,
 	struct iovmm_share_group *grp;
 	tegra_iovmm_addr_t max_free, total_free, total;
 	unsigned int num, num_free;
-	unsigned int total_unpinned, largest_unpinned;
 
 	int len = 0;
 
@@ -151,12 +147,6 @@ static int tegra_iovmm_read_proc(char *page, char **start, off_t off,
 			len += iovmprint("\t\tsize: %uKiB free: %uKiB "
 				"largest: %uKiB (%u free / %u total blocks)\n",
 				total, total_free, max_free, num_free, num);
-			nvmap_get_unpinned_iovmm_memory(&total_unpinned,
-				&largest_unpinned);
-			len += iovmprint("\t\tunpinned:total=%uKiB, "
-				"largest=%uKiB, pinned:total=%uKiB\n",
-				total_unpinned, largest_unpinned,
-				(total - total_free - total_unpinned));
 		}
 	}
 	mutex_unlock(&iovmm_list_lock);

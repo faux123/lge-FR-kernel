@@ -2730,6 +2730,9 @@ void NvRmPrivDfsSuspend(NvOdmSocPowerState state)
                                       NV_MAX(pDvs->DvsCorner.EmcMv,
                                              pDvs->DvsCorner.ModulesMv));
 
+            // faux123: add back the check against min core voltage
+            v = NV_MAX(v, pDvs->MinCoreMv);
+
             // If CPU rail returns to default level by PMU underneath DVFS
             // need to synchronize voltage after LP1 same way as after LP2
             if (pDvs->VCpuOTPOnWakeup)
